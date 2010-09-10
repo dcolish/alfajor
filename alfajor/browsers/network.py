@@ -59,8 +59,8 @@ class Network(DOMMixin):
         self._request_environ = None
         self._cookie_jar = CookieJar()
         self._opener = urllib2.build_opener(
-            urllib2.HTTPCookieProcessor(self._cookie_jar)
-        )
+            urllib2.HTTPCookieProcessor(self._cookie_jar),
+            )
         self.status_code = 0
         self.status = ''
         self.response = None
@@ -82,19 +82,20 @@ class Network(DOMMixin):
         request = urllib2.Request(self.location)
         policy = self._cookie_jar._policy
 
-        # return ok will only return a cookie if the following attrs are set
-        # correctly => # "version", "verifiability", "secure", "expires",
+        # cookelib will only return a cookie if the following attrs are set
+        # correctly => "version", "verifiability", "secure", "expires",
         # "port", "domain"
         return dict((c.name, c.value.strip('"'))
             for c in self._cookie_jar if policy.return_ok(c, request))
 
     def set_cookie(self, name, value, domain=None, path=None,
                    session=True, expires=None, port=None):
-#        Cookie(version, name, value, port, port_specified,
-#                 domain, domain_specified, domain_initial_dot,
-#                 path, path_specified, secure, expires,
-#                 discard, comment, comment_url, rest,
-#                 rfc2109=False):
+        # !Documentation for Cookie Spec!
+        # Cookie(version, name, value, port, port_specified,
+        # domain, domain_specified, domain_initial_dot,
+        # path, path_specified, secure, expires,
+        # discard, comment, comment_url, rest,
+        # rfc2109=False)
 
         cookie = Cookie(0, name, value, port, bool(port),
                         domain or '', bool(domain),
@@ -132,9 +133,9 @@ class Network(DOMMixin):
             if data:
                 query_string = data
             if query_string:
-                url = url + '?' + query_string
-
+                url = ''.join((url, '?', query_string))
             request = urllib2.Request(url)
+
         elif method == 'POST':
             request = urllib2.Request(url, data)
         else:
@@ -151,12 +152,12 @@ class Network(DOMMixin):
 
         self.status_code = response.getcode()
         self.headers = Headers(
-            (head.strip().split(': ',1) for head in response.info().headers)
-        )
+            (head.strip().split(': ', 1) for head in response.info().headers),
+            )
         self._referrer = request.get_full_url()
         self.location = response.geturl()
-        self._response = response
-        self.response = ''.join(list(response))
+        self.response = response.read()
+        response.close()
         self._sync_document()
 
         open_ended = time()
@@ -166,4 +167,3 @@ class Network(DOMMixin):
                     url, request_time,
                     open_ended - open_started - request_time)
         after_browser_activity.send(self)
-

@@ -161,18 +161,8 @@ class WSGI(DOMMixin):
 
         logger.info('%s(%s) == %s', method, url, request_uri(environ))
         request_started = time()
-        rv = run_wsgi_app(self._wsgi_app, environ)
-        response = BaseResponse(*rv)
-        # TODO:
-        # response.make_sequence()  # werkzeug 0.6+
-        # For now, must:
-        response.response = list(response.response)
-        if hasattr(rv[0], 'close'):
-            rv[0].close()
-        # end TODO
-
-        # request is complete after the app_iter (rv[0]) has been fully read +
-        # closed down.
+        response = BaseResponse(*run_wsgi_app(self._wsgi_app, environ))
+        response.make_sequence()
         request_ended = time()
 
         self._request_environ = request_environ
@@ -268,7 +258,7 @@ class WSGI(DOMMixin):
             return {
                 'input_stream': StringIO(payload),
                 'content_length': len(payload),
-                'content_type': content_type
+                'content_type': content_type,
                 }
 
 
@@ -278,7 +268,7 @@ def _wrap_file(filename, content_type):
     return FileStorage(
         stream=open(filename, 'rb'),
         filename=os.path.basename(filename),
-        content_type=content_type
+        content_type=content_type,
     )
 
 
